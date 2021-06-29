@@ -3,19 +3,26 @@ const router = express.Router();
 const Message = require('../models/Message')
 
 
-router.post('/message', (req, res) => {
+const Joi = require('@hapi/joi');
+
+const schema = {
+  message: Joi.string().min(4).max(50).required()
+}
+
+router.post('/message', async (req, res) => {
+  const { errors } = new Joi.ValidationError(req.body, schema)
+  if (errors) return res.status(400).send(errors.message.message)
+
   const message = new Message({
     message: req.body.message
   });
 
-  message.save(error => {
-    if (error) {
-      res.status(404).send('Message not found!!')
-    } else {
-      res.status(200).json(message)
-    };
-  });
-
+  try {
+    const savedMessage = await message.save();
+    res.json(savedMessage)
+  } catch (err) {
+    res.status(400).send(err);
+  }
 });
 
 module.exports = router
